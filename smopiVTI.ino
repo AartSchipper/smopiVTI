@@ -23,14 +23,25 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+    ******************* 
+
     - Translated the comments to English 
-    - Adapted to "Micro OSD v2.4" hardware
-    by Aart 03-2019 
+    - Adapted to "Micro OSD v2.4" hardware 
+    Note: 
+      - The AB7456 in the Micro OSD v2.4 hardware has a very strange font installed for the intended drone use of the module. 
+      Replace this with the CUSTOM.mcm font using the UploadFont-sketch, both found in the MAX7456/examples directory of the 7456 library and 
+      an XMODEM program. I used lrzsz, minicom should work too, but not for me.  
+
+      Todo: Connect GPS module, Find  and connect info- and PPS pins 
+       
+    Aart 03-2019 
+
+    *******************
 */
 
 //#define DEBUG
 
-#define MOSD24        // Switch to Micro OSD 2.4 hardware 
+#define MOSD24        // Uncommend when using Micro OSD 2.4 hardware 
                       // Arduino board settings "Arduino Pro or Pro Mini", Atmega328P 5V, 16 MHz
 
 #define HTTPSTRING   "--smopi.news.nstrefa.pl--"
@@ -142,7 +153,7 @@ void setup()
   // Configuration of the GPS receiver
   //******************************************************//
   OSD.setCursor( 0, 0 );
-  OSD.print("Konfiguracja GPS....");
+  OSD.print("Configurate GPS....");
   do
   {
     static int i = 1;
@@ -164,7 +175,7 @@ void setup()
   // Waiting for the impulse of PPS
   //******************************************************//
   OSD.setCursor( 0, 1 );
-  OSD.print("Czekam na PPS.......");
+  OSD.print("Waiting for PPS.......");
 
   attachInterrupt(digitalPinToInterrupt(PPSpin), checkClock, RISING);
 
@@ -191,7 +202,7 @@ void setup()
   // Calibration of the uC clock
   //******************************************************//
   OSD.setCursor(0, 2);
-  OSD.print("Kalibracja zegara...");
+  OSD.print("Calibrate clock...");
 
   while (!checkedClock)
   {
@@ -224,10 +235,10 @@ void setup()
   // I'm waiting for GPS data
   //******************************************************//
   OSD.setCursor(0, 8);
-  OSD.print("Czekam na dane GPS..");
+  OSD.print("Waiting for GPS data..");
 
   OSD.setCursor(0, 9);
-  OSD.print("NMEA z Fix-em.......");
+  OSD.print("NMEA with Fix.......");
 
   // determine if the GPS receiver is in 3D Fix mode - on this basis determine the readiness of VTI to work.
   // What about "leap second"? Is it possible to say that the GPS receiver has already downloaded information about it?

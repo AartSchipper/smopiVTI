@@ -23,10 +23,15 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    Translated to English by Aart 03-2019
+    - Translated the comments to English 
+    - Adapted to "Micro OSD v2.4" hardware
+    by Aart 03-2019 
 */
 
 //#define DEBUG
+
+#define MOSD24        // Switch to Micro OSD 2.4 hardware 
+                      // Arduino board settings "Arduino Pro or Pro Mini", Atmega328P 5V, 16 MHz
 
 #define HTTPSTRING   "--smopi.news.nstrefa.pl--"
 #define VERSTRING    "- 2015-17 smopiVTI v2.2 -"
@@ -35,7 +40,7 @@
 
 #include "VTI.h"
 // #include <Time.h>      // Time      (http://www.pjrc.com/teensy/td_libs_Time.html) by Michael Margolis
-#include <TimeLib.h>   // Needed. Aart
+#include <TimeLib.h>   // Needed ? Todo: Why. Aart
 #include <TinyGPS++.h> // TinyGPS++ (http://arduiniana.org/libraries/tinygpsplus/) by Mikal Hart
 #include <SPI.h>
 #include <MAX7456.h>
@@ -70,7 +75,12 @@ const unsigned int MAX_INPUT  = 20;          // Size of the buffer for GPS data
 TinyGPSPlus GPS;
 
 // Declaration of the OSD object
-const byte osdChipSelect = 10;
+#ifdef MOSD24
+  const byte osdChipSelect = 6;
+#else
+  const byte osdChipSelect = 10;
+#endif
+
 MAX7456 OSD( osdChipSelect );
 
 
@@ -100,7 +110,7 @@ void setup()
 
   // Initialize the SPI connection:
   SPI.begin();
-  SPI.setClockDivider( SPI_CLOCK_DIV2 ); // Speed must be less than 10 MHz.
+  SPI.setClockDivider( SPI_CLOCK_DIV4 ); // Speed must be less than 10 MHz.
 
   // Initialize the MAX7456 OSD:
   OSD.begin();                           // Use NTSC with default area.

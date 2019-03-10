@@ -1,14 +1,14 @@
 /*
-    Video Time Inserter: http://smopi.news.nstrefa.pl/ wersja v2.2.
-    Wymagania sprzętowe:
-    - Arduino UNO,
-    - odbiornik GPS U-Blox NEO-6M lub zgodny,
-    - VideoOverlayShield MAX7456.
-    Moduł główny jest odpowiedzialny za odczytanie z odbiornika GPS aktualnego położenia, daty oraz godziny. Dane te
-    są następnie umieszczane w obrazie wideo PAL lub NTSC.
+    Video Time Inserter: http://smopi.news.nstrefa.pl/ version v2.2.
+    
+    Hardware requirements:
+     - Arduino UNO,
+     - U-Blox NEO-6M GPS receiver or compatible,
+     - VideoOverlayShield MAX7456.
+     The main module is responsible for reading the current position, date and time from the GPS receiver. These data
+     they are then placed in the PAL or NTSC video image.
 
     Piotr Smolarz, e-mail: smopi.pl@gmail.com
-
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    Translated to English by Aart 03-2019
 */
 
 //#define DEBUG
@@ -32,48 +34,48 @@
 #define CPU_STEPS 16
 
 #include "VTI.h"
-#include <Time.h>      //Time      (http://www.pjrc.com/teensy/td_libs_Time.html) by Michael Margolis
-#include <TimeLib.h>   // Needed. 
-#include <TinyGPS++.h> //TinyGPS++ (http://arduiniana.org/libraries/tinygpsplus/) by Mikal Hart
+// #include <Time.h>      // Time      (http://www.pjrc.com/teensy/td_libs_Time.html) by Michael Margolis
+#include <TimeLib.h>   // Needed. Aart
+#include <TinyGPS++.h> // TinyGPS++ (http://arduiniana.org/libraries/tinygpsplus/) by Mikal Hart
 #include <SPI.h>
 #include <MAX7456.h>
 
-// Zegar systemowy VTI
+// System clock VTI
 VTIclock clock1;
 
-// Zmienne globalne
-volatile bool          checkedClock = false; // Czy częstotliwość zegara jest wyznaczona
-volatile unsigned int  checkNo      = 1;     // Numer sprawdzenia częstotliwości zegara
-volatile bool          isPPSready   = false; // Czy pojawił się impuls 1PPS
-volatile unsigned long msTimeStamp  = 0;     // Ilość milisekund od uruchomienia urządzenia
-volatile unsigned int  counterPPS   = 0;     // Licznik PPS-ów
-volatile unsigned long microsPPS[MAX_CHECKS];// Mikrosekundy pomiędzy impulsami PPS
-unsigned long          averageClock = 0;     // Średnia częstotliwość zegara
-unsigned long          counterVSync = 0;     // Licznik ramek VSync
+// Global variables
+volatile bool          checkedClock = false;  // Is the clock frequency set ?
+volatile unsigned int  checkNo      = 1;      // The number of clock frequency checks
+volatile bool          isPPSready   = false;  // Is there a 1 PPS impulse ?
+volatile unsigned long msTimeStamp  = 0;      // The number of milliseconds since the device was started
+volatile unsigned int  counterPPS   = 0;      // PPS counter
+volatile unsigned long microsPPS[MAX_CHECKS]; // Microseconds between PPS pulses
+unsigned long          averageClock = 0;      // Average clock frequency
+unsigned long          counterVSync = 0;      // Frame counter VSync
 
 #ifdef DEBUG
 volatile unsigned int  vtiMillis      = 0;
 volatile unsigned int  ppsTCNT1       = 0;
 #endif
 
-//Przełącznik trybu wyświetlania: Date/Time <-> Info
+// Display mode switch: Date/Time <-> Info
 const int displayModePin = 4;
 
 //GPS RXPin = 0, TXPin = 1
-const uint32_t     GPSBaud    = 9600;        // Prędkość komunikacji z GPS
+const uint32_t     GPSBaud    = 9600;        // Communication speed with GPS
 const byte         PPSpin     = 3;           // PPS pin
-const unsigned int MAX_INPUT  = 20;          // Wielkośc bufora na dane z GPS
+const unsigned int MAX_INPUT  = 20;          // Size of the buffer for GPS data
 
-// Deklaracja obiektu GPS
+// Declaration of a GPS object
 TinyGPSPlus GPS;
 
-//Deklaracja obiektu OSD
+// Declaration of the OSD object
 const byte osdChipSelect = 10;
 MAX7456 OSD( osdChipSelect );
 
 
 // Interrupt service routine
-// Co 1ms wykonaj aktualizację czasu VTI
+// Every 1 ms, perform the VTI time update
 ISR(TIMER1_COMPA_vect)
 {
   clock1.Update();
@@ -91,24 +93,22 @@ void setup()
   TimeElements  tm;
 
 
-  pinMode(PPSpin, INPUT);                // Impulsy PPS
-  pinMode(displayModePin, INPUT_PULLUP); // Przełącznik Data/Czas <-> Info
+  pinMode(PPSpin, INPUT);                // PPS Impulse
+  pinMode(displayModePin, INPUT_PULLUP); // Data / Time switch <-> Info
 
-  Serial.begin(GPSBaud);                 // Inicjalizacja interfejsu szeregowego do
-  // komunikacji z GPS
+  Serial.begin(GPSBaud);                 // Initialization of the serial interface to communication with GPS
 
   // Initialize the SPI connection:
   SPI.begin();
-  SPI.setClockDivider( SPI_CLOCK_DIV2 ); // Musi być mniej niż 10MHz.
+  SPI.setClockDivider( SPI_CLOCK_DIV2 ); // Speed must be less than 10 MHz.
 
   // Initialize the MAX7456 OSD:
   OSD.begin();                           // Use NTSC with default area.
-  OSD.setSwitchingTime( 5 );             // Set video croma distortion
-  // to a minimum.
+  OSD.setSwitchingTime( 5 );             // Set video croma distortion to a minimum.
 
 
   // !!! Only needed if ascii font
-  // !!! Odkomentować tylko w przypadku wgrania fontów ASCII
+  // !!! Uncomment only when using ASCII fonts
   // !!! http://smopi.news.nstrefa.pl/index.php?pages/Zmiana-czcionki-w-MAX7456
   OSD.setCharEncoding( MAX7456_ASCII );
 
@@ -124,12 +124,12 @@ void setup()
   }
 
 
-  OSD.display(); // Aktywuj OSD
+  OSD.display(); // Activate OSD
 
-  OSDfooter();   // Wyświetl informację o wersji VTI
+  OSDfooter();   // Display information about the VTI version
 
   //******************************************************//
-  //Konfiguracja odbiornika GPS
+  // Configuration of the GPS receiver
   //******************************************************//
   OSD.setCursor( 0, 0 );
   OSD.print("Konfiguracja GPS....");
@@ -137,7 +137,7 @@ void setup()
   {
     static int i = 1;
 
-    // Wykonuj jeśli nie w VSYNC
+    // Do it if not in VSYNC
     while (OSD.notInVSync())
     {}
 
@@ -151,7 +151,7 @@ void setup()
 
 
   //******************************************************//
-  //Czekam na impuls PPS
+  // Waiting for the impulse of PPS
   //******************************************************//
   OSD.setCursor( 0, 1 );
   OSD.print("Czekam na PPS.......");
@@ -164,7 +164,7 @@ void setup()
 
     delay(1000);
 
-    // Wykonuj jeśli nie w VSYNC
+    // Do it if not in VSYNC
     while (OSD.notInVSync())
     {}
 
@@ -178,14 +178,14 @@ void setup()
 
 
   //******************************************************//
-  //Kalibracja zegara uC
+  // Calibration of the uC clock
   //******************************************************//
   OSD.setCursor(0, 2);
   OSD.print("Kalibracja zegara...");
 
   while (!checkedClock)
   {
-    // Wykonuj jeśli nie w VSYNC
+    // Do it if not in VSYNC
     while (OSD.notInVSync())
     {}
 
@@ -198,7 +198,7 @@ void setup()
   OSD.setCursor( 22, 2 );
   OSD.print("OK ");
 
-  // Wypisz odczytane częstotliwości
+  // List the read frequencies
   for (int i = 0; i < MAX_CHECKS; i++)
   {
     OSD.setCursor(1, 3 + i);
@@ -206,12 +206,12 @@ void setup()
     OSD.print(CPU_STEPS * microsPPS[i]);
     OSD.print(" Hz");
   }
-  // Średnia częstotliwość:
+  // Average frequency:
   averageClock = (averageClock / MAX_CHECKS) * CPU_STEPS;
 
 
   //******************************************************//
-  //Czekam na dane z GPS
+  // I'm waiting for GPS data
   //******************************************************//
   OSD.setCursor(0, 8);
   OSD.print("Czekam na dane GPS..");
@@ -219,9 +219,9 @@ void setup()
   OSD.setCursor(0, 9);
   OSD.print("NMEA z Fix-em.......");
 
+  // determine if the GPS receiver is in 3D Fix mode - on this basis determine the readiness of VTI to work.
+  // What about "leap second"? Is it possible to say that the GPS receiver has already downloaded information about it?
 
-  // TODO: ustalić czy odbiornik GPS jest w trybie 3D Fix - na tej podstawie ustalać gotowość VTI do pracy.
-  //       Co z "leap second"? Czy można jakoś stwierdzić, że odbiornik GPS pobrał już informację na ten temat?
   while (!gpsReady)
   {
     static unsigned int  i  = 0;
@@ -253,7 +253,7 @@ void setup()
 
 
   //******************************************************//
-  //Ustaw datę i godzinę systemową VTI
+  // Set the VTI system date and time
   //******************************************************//
   tm.Second = GPS.time.second();
   tm.Minute = GPS.time.minute();
@@ -263,11 +263,11 @@ void setup()
   tm.Month  = GPS.date.month();
   tm.Year   = GPS.date.year() - 1970;
 
-  clock1.setDateTime(makeTime(tm), 0);   // Ustaw czas VTI
+  clock1.setDateTime(makeTime(tm), 0);   // Set the VTI time
 
 
   //******************************************************//
-  // Konfiguracja licznika: timer1
+  // Counter configuration: timer1
   //******************************************************//
   noInterrupts();                      // disable all interrupts
   TCCR1A = 0;
@@ -279,21 +279,20 @@ void setup()
   TCCR1B |= (1 << CS10);               // Prescaler: 1
   TIMSK1 |= (1 << OCIE1A);             // enable timer compare interrupt
   interrupts();                        // enable all interrupts
-  // timer1 skonfigurowany
+  // timer1 configured
 
-
-  // Ustawienie funkcji przerwania dla impulsu 1PPS
+  // Set the interrupt function for the 1PPS pulse
   attachInterrupt(digitalPinToInterrupt(PPSpin), PPSevent, RISING);
 
-
-  // Wykonuj do pierwszego wywołania funkcji PPSevent(), po jej wywołaniu
-  // wewnętrzny czas VTI jest ustawiony z dokładnością +/- 1ms
+  // Do the first call to the PPSevent () function after calling it
+  // internal VTI time is set with accuracy of +/- 1ms
   while (counterPPS < 2);
 
-
-  // Wyczyść ekran
+  // Clear the screen
   OSD.clear();
+
 }
+
 //******************************************************//
 //END SETUP
 //******************************************************//
@@ -305,17 +304,17 @@ void setup()
 //******************************************************//
 void loop()
 {
-  static char          input_line [MAX_INPUT]; // bufor na dane z GPS
-  static unsigned int  input_pos  = 0;         // ile danych w buforze
-  static boolean       isInfoMode = false;     // Wybór trybu OSD
-  DateTimeMS           tmpDateTimeMS;          // Struktura zawierająca godzinę, datę i milisekundę.
-  DateTimeMS           *ptr;                   // Wskaznik do struktury tmpDateTimeMS
+  static char          input_line [MAX_INPUT]; // Buffer for GPS data
+  static unsigned int  input_pos  = 0;         // How much data is in the buffer
+  static boolean       isInfoMode = false;     // Selecting the OSD mode
+  DateTimeMS           tmpDateTimeMS;          // Structure containing hour, date and millisecond.
+  DateTimeMS           *ptr;                   // A pointer to the tmpDateTimeMS structure
 
 
-  // Wykonuj do kiedy nie w VSYNC (czyli dla PAL ~19ms)
+  //Perform until when not in VSYNC (i.e. for PAL ~ 19ms)
   while (OSD.notInVSync())
   {
-    // Wykonaj jeśli są dostępne dane z odbiornika GPS i miejsce w buforze
+    // Perform if data from the GPS receiver and space in the buffer are available
     if (Serial.available() > 0 && input_pos < MAX_INPUT)
     {
       input_line[input_pos] = Serial.read();
@@ -361,21 +360,21 @@ void loop()
   //////////////////////////
 
 
-  // Aktualizuj licznik półobrazów
+  // Update the image counter
   counterVSync++;
 
 
-  // Czy w buforze są dane z odbiornika GPS?
+  // Are there any data from the GPS receiver in the buffer ?
   if (input_pos > 0)
   {
     for (uint8_t i = 0; i < input_pos; i++)
     {
-      //Pobierz dane GPS z bufora i dekoduj
+      // Get GPS data from the buffer and decode
       if (GPS.encode(input_line[i]) && GPS.time.isValid())
       {
-        // Porównaj czas systemowy z GPS nie częściej niż co 1000 ms
-        // W przypadku różnicy wyświetl komunikat błędu.
-        if ( !checkVTItime(1000) ) OSDFatalError(); // TODO: przemyśleć co powinno być sprawdzane i komunikaty błędów!
+        // Compare the system time with GPS no more often than every 1000 ms
+        // In the case of a difference, display an error message.
+        if ( !checkVTItime(1000) ) OSDFatalError(); // TODO: think about what should be checked and error messages!
       }
     }
     input_pos = 0;
@@ -383,10 +382,9 @@ void loop()
   //endif
 
 
-  // Wykonuj do kiedy w VSYNC
+  // Do until when in VSYNC
   while (!OSD.notInVSync())
   {
-
   }
 
 }
@@ -395,7 +393,7 @@ void loop()
 //******************************************************//
 
 
-// Wyświetl milisekundy
+// View milliseconds
 void osdMillis(struct DateTimeMS *ptr)
 {
   static unsigned int counter = 0;
@@ -413,8 +411,9 @@ void osdMillis(struct DateTimeMS *ptr)
 }
 
 
-// Wyświetl aktualną godzinę
+// Display the current time
 void osdTime(boolean mustDisplay, struct DateTimeMS *ptr)
+
 {
   static char t[] = "00:00:00 ";
   static int prevSecond = 0;
@@ -460,7 +459,7 @@ void osdTime(boolean mustDisplay, struct DateTimeMS *ptr)
 }
 
 
-// Wyświetl aktualną datę
+// Display the current date
 void osdDate(boolean mustDisplay, struct DateTimeMS *ptr)
 {
   static char d[] = "0000-00-00";
@@ -495,7 +494,7 @@ void osdDate(boolean mustDisplay, struct DateTimeMS *ptr)
 }
 
 
-// Wyświetl licznik półobrazów
+// Display the counter of half pictures
 void osdVSync()
 {
   char charVSync[]   = "      ";
@@ -534,7 +533,7 @@ void osdVSync()
 }
 
 
-// Wyświetl informacje w trybie "Info": położenie, wysokość, HDOP itd.
+// Display information in "Info" mode: position, altitude, HDOP, etc.
 void osdInfo()
 {
   static unsigned long lastUpdated = 0;
@@ -584,7 +583,7 @@ void osdInfo()
 }
 
 
-// Wyświetl krótką informację: aktualnie ilość satelitów
+// Display short information: currently the number of satellites
 void osdShortInfo()
 {
   static unsigned long ms = 0;
@@ -600,7 +599,7 @@ void osdShortInfo()
 }
 
 
-// Wyświetl informację o wersji
+// View version information
 void OSDfooter()
 {
   OSD.setCursor( 0, OSD.rows() - 2 );
@@ -611,7 +610,7 @@ void OSDfooter()
 }
 
 
-// Dekoduj dane odczytane z GPS
+// Decode data read from GPS
 void updateGPSobj(unsigned long timeout)
 {
   unsigned long ms = millis();
@@ -629,7 +628,7 @@ void updateGPSobj(unsigned long timeout)
 }
 
 
-// Porównaj czas systemowy z czasem GPS
+// Compare the system time with GPS time
 bool checkVTItime(unsigned long msParam)
 {
   static unsigned long ms = millis();
@@ -646,7 +645,7 @@ bool checkVTItime(unsigned long msParam)
 }
 
 
-// Wyświetl informację o poważnym błędzie
+// Display information about a serious error
 void OSDFatalError()
 {
   time_t DT = clock1.getDateTime();
@@ -667,7 +666,7 @@ void OSDFatalError()
 }
 
 
-//Wykonaj gdy impuls PPS
+// Perform when PPS pulse
 void PPSevent()
 {
 #ifdef DEBUG
@@ -679,11 +678,11 @@ void PPSevent()
   counterPPS++;
 
   clock1.roundDateTime();
-  TCNT1  = 0;            // (0 <-> OCR1A) Wyzeruj rejest w timer1 ATmega328
+  TCNT1  = 0;            // (0 <-> OCR1A) Reset the register in timer1 ATmega328
 }
 
 
-//Wyznaczenie rzeczywistej wartości zegara uC
+// Determine the real value of the uC clock
 void checkClock()
 {
   static unsigned long microsTS = 0;
@@ -706,7 +705,7 @@ void checkClock()
 }
 
 
-// Konfiguracja odbiornika GPS
+// Configure the GPS receiver
 boolean configureGPS()
 {
   int counter = 0;
@@ -732,7 +731,7 @@ boolean configureGPS()
     return false;
   }
 
-  // Wyłącz komunikat NMEA GLL:
+  // Turn off the NMEA GLL message:
   uint8_t setGLL[] = {
     0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x2B
   };
@@ -752,7 +751,7 @@ boolean configureGPS()
     return false;
   }
 
-  // Wyłącz komunikat NMEA GSA:
+  // Turn off the NMEA GSA message:
   uint8_t setGSA[] = {
     0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x32
   };
@@ -772,7 +771,7 @@ boolean configureGPS()
     return false;
   }
 
-  // Wyłącz komunikat NMEA GSV:
+  // Turn off the NMEA GSV message:
   uint8_t setGSV[] = {
     0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x39
   };
@@ -792,7 +791,7 @@ boolean configureGPS()
     return false;
   }
 
-  // Wyłącz komunikat NMEA VTG:
+  // Turn off the NMEA VTG message:
   uint8_t setVTG[] = {
     0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x05, 0x47
   };

@@ -6,8 +6,8 @@
 
 
 //******************************************************//
-//Struktura przechowująca informacje o dacie, godzinie
-// oraz milisekundach.
+// structure storing information about the date and time
+// and milliseconds.
 //******************************************************//
 struct DateTimeMS
 {
@@ -17,8 +17,8 @@ struct DateTimeMS
 
 
 //******************************************************//
-//Klasa VTIclock - informacja o aktualnej dacie i godzinie
-//oraz milisekundy.
+// VTIclock class - information about the current date and time
+// and milliseconds.
 //******************************************************//
 class VTIclock
 {
@@ -82,7 +82,7 @@ class VTIclock
     }
 
 
-    // Zaokrąglij do pełnej sekundy
+    // Round to the full second
     void roundDateTime()
     {
       if (vtiDateTimeMS.MS >= 500) vtiDateTimeMS.DT += 1;
@@ -90,7 +90,7 @@ class VTIclock
     }
 
 
-    // Zwróć strukture vtiDateTimeMS
+    // Return structure to vtiDateTimeMS
     DateTimeMS  getDateTimeMS()
     {
       return vtiDateTimeMS;

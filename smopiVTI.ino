@@ -25,7 +25,7 @@
 
     ******************* 
 
-    - Translated the comments to English 
+    - Translated the comments and OSD messages to English 
     - Adapted to "Micro OSD v2.4" hardware 
     Note: 
       - The AB7456 in the Micro OSD v2.4 hardware has a very strange font installed for the intended drone use of the module. 

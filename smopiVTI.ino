@@ -265,7 +265,7 @@ void setup()
   // Average frequency:
   averageClock = (averageClock / MAX_CHECKS) * CPU_STEPS;
   
-  clockCheckFinished == true; 
+  clockCheckFinished = true; 
 
   //******************************************************//
   // I'm waiting for GPS data

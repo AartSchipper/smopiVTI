@@ -33,13 +33,16 @@
       an XMODEM program. I used lrzsz, minicom should work too, but not for me.  
 
       Todo: Connect GPS module, Find  and connect info- and PPS pins 
+
+      From MW_OSD: uint8_t sensorpinarray[]={VOLTAGEPIN,VIDVOLTAGEPIN,AMPERAGEPIN,AUXPIN,RSSIPIN};  
+      
        
     Aart 03-2019 
 
     *******************
 */
 
-//#define DEBUG
+#define DEBUG
 
 #define MOSD24        // Uncommend when using Micro OSD 2.4 hardware 
                       // Arduino board settings "Arduino Pro or Pro Mini", Atmega328P 5V, 16 MHz
@@ -78,9 +81,14 @@ volatile unsigned int  ppsTCNT1       = 0;
 const int displayModePin = 4;
 
 //GPS RXPin = 0, TXPin = 1
-const uint32_t     GPSBaud    = 9600;        // Communication speed with GPS
-const byte         PPSpin     = 3;           // PPS pin
-const unsigned int MAX_INPUT  = 20;          // Size of the buffer for GPS data
+const uint32_t     GPSBaud    = 9600;         // Communication speed with GPS
+
+#ifdef MOSD24
+  const byte         PPSpin     = A1;         // CURRENT pin on MOSD 2.4 used as PPS pin
+#else
+  const byte         PPSpin     = 3;          // PPS pin
+#endif
+const unsigned int MAX_INPUT  = 20;           // Size of the buffer for GPS data
 
 // Declaration of a GPS object
 TinyGPSPlus GPS;
@@ -729,6 +737,7 @@ void checkClock()
 // Configure the GPS receiver
 boolean configureGPS()
 {
+  
   int counter = 0;
   boolean gps_set_success = false;
 
@@ -751,6 +760,7 @@ boolean configureGPS()
   {
     return false;
   }
+  
 
   // Turn off the NMEA GLL message:
   uint8_t setGLL[] = {
@@ -831,6 +841,7 @@ boolean configureGPS()
   {
     return false;
   }
+ 
   return true; //Configuration success
 }
 

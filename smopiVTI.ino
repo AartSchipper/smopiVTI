@@ -33,9 +33,8 @@
       an XMODEM program. I used lrzsz, minicom should work too, but not for me.  
 
       Todo: Connect GPS module, Find  and connect info- and PPS pins 
-
-      From MW_OSD: uint8_t sensorpinarray[]={VOLTAGEPIN,VIDVOLTAGEPIN,AMPERAGEPIN,AUXPIN,RSSIPIN};  
-      
+      LEDpin = 7
+      CURRENT pin = A1
        
     Aart 03-2019 
 
@@ -63,11 +62,12 @@
 VTIclock clock1;
 
 // Global variables
-volatile bool          checkedClock = false;  // Is the clock frequency set ?
+volatile bool          checkedClock = false;  // Is the clock frequency set ? 
+volatile bool          clockCheckFinished = false;  // Is the clock frequency setting finished ? 
 volatile unsigned int  checkNo      = 1;      // The number of clock frequency checks
 volatile bool          isPPSready   = false;  // Is there a 1 PPS impulse ?
 volatile unsigned long msTimeStamp  = 0;      // The number of milliseconds since the device was started
-volatile unsigned int  counterPPS   = 0;      // PPS counter
+volatile unsigned int  counterPPS   = 0;      // PPS counter 
 volatile unsigned long microsPPS[MAX_CHECKS]; // Microseconds between PPS pulses
 unsigned long          averageClock = 0;      // Average clock frequency
 unsigned long          counterVSync = 0;      // Frame counter VSync
@@ -84,7 +84,8 @@ const int displayModePin = 4;
 const uint32_t     GPSBaud    = 9600;         // Communication speed with GPS
 
 #ifdef MOSD24
-  const byte         PPSpin     = A1;         // CURRENT pin on MOSD 2.4 used as PPS pin
+  const byte         PPSpin     = A1;        // CURRENT pin on MOSD 2.4 used as PPS pin. PCINT9 
+ 
 #else
   const byte         PPSpin     = 3;          // PPS pin
 #endif
@@ -110,6 +111,17 @@ ISR(TIMER1_COMPA_vect)
   clock1.Update();
 }
 
+ISR(PCINT1_vect) 
+{
+  if (digitalRead(A1)) { // rising edge only
+    if (clockCheckFinished) {
+      PPSevent(); 
+    } else {
+      checkClock(); 
+    }
+  }
+}
+
 
 //******************************************************//
 //SETUP - run one time
@@ -123,6 +135,12 @@ void setup()
 
 
   pinMode(PPSpin, INPUT);                // PPS Impulse
+  
+#ifdef MOSD24  
+  PCICR |= 0b00000010;                      // Disable PCINT
+  PCMSK1 = (1<<PCINT9);                     // Unmask pin change interrupt on pin A1 
+#endif
+
   pinMode(displayModePin, INPUT_PULLUP); // Data / Time switch <-> Info
 
   Serial.begin(GPSBaud);                 // Initialization of the serial interface to communication with GPS
@@ -185,7 +203,11 @@ void setup()
   OSD.setCursor( 0, 1 );
   OSD.print("Waiting for PPS.......");
 
+#ifdef MOSD24
+  PCICR |= 0x01 << 1; // Enable Pin Change Interrupt 1 
+#else
   attachInterrupt(digitalPinToInterrupt(PPSpin), checkClock, RISING);
+#endif
 
   do
   {
@@ -222,7 +244,12 @@ void setup()
     OSD.print(checkNo);
   }
 
+  
+#ifdef MOSD24
+  PCICR |= 0x01 << 0; // Disable Pin Change Interrupt 1 
+#else
   detachInterrupt(digitalPinToInterrupt(PPSpin));
+#endif
 
   OSD.setCursor( 22, 2 );
   OSD.print("OK ");
@@ -237,7 +264,8 @@ void setup()
   }
   // Average frequency:
   averageClock = (averageClock / MAX_CHECKS) * CPU_STEPS;
-
+  
+  clockCheckFinished == true; 
 
   //******************************************************//
   // I'm waiting for GPS data
@@ -311,7 +339,12 @@ void setup()
   // timer1 configured
 
   // Set the interrupt function for the 1PPS pulse
+  
+#ifdef MOSD24
+  PCICR |= 0x01 << 1; // Enable Pin Change Interrupt 1 
+#else
   attachInterrupt(digitalPinToInterrupt(PPSpin), PPSevent, RISING);
+#endif
 
   // Do the first call to the PPSevent () function after calling it
   // internal VTI time is set with accuracy of +/- 1ms

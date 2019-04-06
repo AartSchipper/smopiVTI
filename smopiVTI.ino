@@ -27,26 +27,24 @@
 
     - Translated the comments and OSD messages to English 
     
-    - Adapted to "Micro OSD v2.4" hardware (or compatible. Most or all "MWOSD" compatible hardware might be made to work, provided some Atmega pins are broken out )
+    - Adapted to "Micro OSD v2.4" hardware (or compatible. Most or all "MWOSD" drone firmware compatible hardware might be made to work, 
+    provided some Atmega pins are broken out. I did not test other hardware )
     
-    Notes: 
-    - The AB7456 in the Micro OSD v2.4 hardware has a very strange font installed for the intended drone use of the module. 
-      Replace this with the CUSTOM.mcm font using the UploadFont-sketch, both found in the MAX7456/examples directory of the 7456 library and 
-      an XMODEM program. I used lrzsz, minicom should work too, but not for me.  
-
-    The GPS Tx and Rx are connected to the Micro OSD Rx and Tx (= Atmega serial). 
-    In the GPS module documentation its Rx (green wire) and Tx (blue wire) were swapped (?). 
+    Notes on using the MOSD24 hardware: 
 
     The Micro OSD module is programmed using a FTDI  module or cable. Arduino board settings "Arduino Pro or Pro Mini", Atmega328P 5V, 16 MHz
-    It is not possible to program the OSD module when de GPS module is also connected, so some connectors are needed. 
-
-    The CURRENT pin is used as GPS PPS pin using a pin change interrupt. 
-    This is Arduino Pin A1, PCINT9 on PCIE1 For registers see Atmega 328 manual 12.2.4 en 12.2.6 
-
+    It is not possible to program the OSD module while de GPS module is connected or use the GPS while the FTDI is connected, so some connectors are needed.
     
+    The AB7456 in the Micro OSD v2.4 hardware has a very strange font installed for the intended drone use of the module. 
+    Replace this with the CUSTOM.mcm font using the UploadFont-sketch, both found in the MAX7456/examples directory of the 7456 library and 
+    an XMODEM program. I used lrzsz, minicom should work too, but not for me.  
 
-      
+    The GPS Tx and Rx are connected to the Micro OSD Rx and Tx (= Atmega serial).  GPS is powered by 5V and GND. 
 
+    The CURRENT pin is used as the GPS PPS pin using a pin change interrupt 
+    This is Arduino Pin A1, PCINT9 on PCIE1. For these registers see the Atmega 328 manual 12.2.4 en 12.2.6 
+
+    The displaymode pin is VBAT1, Arduino pin A0. There is a strong hardware pulldown on this pin, so it is used inverted with the pushbutton between A0 and VCC
        
     Aart 04-2019 
 
@@ -89,18 +87,18 @@ volatile unsigned int  vtiMillis      = 0;
 volatile unsigned int  ppsTCNT1       = 0;
 #endif
 
-// Display mode switch: Date/Time <-> Info
-const int displayModePin = 4;
-
 //GPS RXPin = 0, TXPin = 1
 const uint32_t     GPSBaud    = 9600;         // Communication speed with GPS
 
 #ifdef MOSD24
-  const byte         PPSpin     = A1;         // CURRENT pin on MOSD 2.4 used as PPS pin. PCINT9 
+  const byte        PPSpin     = A1;         // CURRENT pin on MOSD 2.4 used as PPS pin. PCINT9 
+  const int     displayModePin = A0;         // Display mode switch: Date/Time <-> Info. This pin has a strong pulldown 
  
 #else
-  const byte         PPSpin     = 3;          // PPS pin
+  const byte          PPSpin     = 3;        // PPS pin
+  const int       displayModePin = 4;        // Display mode switch: Date/Time <-> Info
 #endif
+
 const unsigned int MAX_INPUT  = 20;           // Size of the buffer for GPS data
 
 // Declaration of a GPS object
@@ -153,7 +151,7 @@ void setup()
   PCMSK1 = (1 << PCINT9);                     // Unmask pin change interrupt only on pin A1 (= PCINT9)
 #endif
 
-  pinMode(displayModePin, INPUT_PULLUP); // Data / Time switch <-> Info
+  pinMode(displayModePin, INPUT_PULLUP); // Data / Time switch <-> Info. The pullup does not work on MOSD hardware due to a strong pulldown
 
   Serial.begin(GPSBaud);                 // Initialization of the serial interface to communication with GPS
 
@@ -401,7 +399,11 @@ void loop()
   //////////////////////////////////
   // SWITCH - select display mode //
   //////////////////////////////////
+#ifdef MOSD24   
+  switch (!digitalRead(displayModePin))
+#else
   switch (digitalRead(displayModePin))
+#endif  
   {
     // Date/Time mode
     case HIGH:

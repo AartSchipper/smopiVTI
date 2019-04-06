@@ -37,7 +37,7 @@
     
     The AB7456 in the Micro OSD v2.4 hardware has a very strange font installed for the intended drone use of the module. 
     Replace this with the CUSTOM.mcm font using the UploadFont-sketch, both found in the MAX7456/examples directory of the 7456 library and 
-    an XMODEM program. I used lrzsz, minicom should work too, but not for me.  
+    a XMODEM program. I used lrzsz, minicom should work too, but not for me.  
 
     The GPS Tx and Rx are connected to the Micro OSD Rx and Tx (= Atmega serial).  GPS is powered by 5V and GND. 
 
@@ -51,7 +51,7 @@
     *******************
 */
 
-#define DEBUG
+// #define DEBUG
 
 #define MOSD24        // Uncommend when using Micro OSD 2.4 or compatile hardware 
                      

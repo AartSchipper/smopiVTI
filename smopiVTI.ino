@@ -26,28 +26,40 @@
     ******************* 
 
     - Translated the comments and OSD messages to English 
-    - Adapted to "Micro OSD v2.4" hardware 
-    Note: 
-      - The AB7456 in the Micro OSD v2.4 hardware has a very strange font installed for the intended drone use of the module. 
+    
+    - Adapted to "Micro OSD v2.4" hardware (or compatible. Most or all "MWOSD" compatible hardware might be made to work, provided some Atmega pins are broken out )
+    
+    Notes: 
+    - The AB7456 in the Micro OSD v2.4 hardware has a very strange font installed for the intended drone use of the module. 
       Replace this with the CUSTOM.mcm font using the UploadFont-sketch, both found in the MAX7456/examples directory of the 7456 library and 
       an XMODEM program. I used lrzsz, minicom should work too, but not for me.  
 
-      Todo: Connect GPS module, Find  and connect info- and PPS pins 
-      LEDpin = 7
-      CURRENT pin = A1
+    The GPS Tx and Rx are connected to the Micro OSD Rx and Tx (= Atmega serial). 
+    In the GPS module documentation its Rx (green wire) and Tx (blue wire) were swapped (?). 
+
+    The Micro OSD module is programmed using a FTDI  module or cable. Arduino board settings "Arduino Pro or Pro Mini", Atmega328P 5V, 16 MHz
+    It is not possible to program the OSD module when de GPS module is also connected, so some connectors are needed. 
+
+    The CURRENT pin is used as GPS PPS pin using a pin change interrupt. 
+    This is Arduino Pin A1, PCINT9 on PCIE1 For registers see Atmega 328 manual 12.2.4 en 12.2.6 
+
+    
+
+      
+
        
-    Aart 03-2019 
+    Aart 04-2019 
 
     *******************
 */
 
 #define DEBUG
 
-#define MOSD24        // Uncommend when using Micro OSD 2.4 hardware 
-                      // Arduino board settings "Arduino Pro or Pro Mini", Atmega328P 5V, 16 MHz
+#define MOSD24        // Uncommend when using Micro OSD 2.4 or compatile hardware 
+                     
 
-#define HTTPSTRING   "--smopi.news.nstrefa.pl--"
-#define VERSTRING    "- 2015-17 smopiVTI v2.2 -"
+#define HTTPSTRING   "--   smopiVTI English  --"
+#define VERSTRING    "-      Aart 2019        -"
 #define MAX_CHECKS 5
 #define CPU_STEPS 16
 
@@ -84,7 +96,7 @@ const int displayModePin = 4;
 const uint32_t     GPSBaud    = 9600;         // Communication speed with GPS
 
 #ifdef MOSD24
-  const byte         PPSpin     = A1;        // CURRENT pin on MOSD 2.4 used as PPS pin. PCINT9 
+  const byte         PPSpin     = A1;         // CURRENT pin on MOSD 2.4 used as PPS pin. PCINT9 
  
 #else
   const byte         PPSpin     = 3;          // PPS pin
@@ -113,8 +125,8 @@ ISR(TIMER1_COMPA_vect)
 
 ISR(PCINT1_vect) 
 {
-  if (digitalRead(A1)) { // rising edge only
-    if (clockCheckFinished) {
+  if (digitalRead(A1)) {      // rising edge only
+    if (clockCheckFinished) { // There are two different PPS ISR. checkClock is used during startup, PPSevent while running
       PPSevent(); 
     } else {
       checkClock(); 
@@ -137,8 +149,8 @@ void setup()
   pinMode(PPSpin, INPUT);                // PPS Impulse
   
 #ifdef MOSD24  
-  PCICR |= 0b00000010;                      // Disable PCINT
-  PCMSK1 = (1<<PCINT9);                     // Unmask pin change interrupt on pin A1 
+  PCICR |= (1 << PCIE1);                      // Enable PCIE1
+  PCMSK1 = (1 << PCINT9);                     // Unmask pin change interrupt only on pin A1 (= PCINT9)
 #endif
 
   pinMode(displayModePin, INPUT_PULLUP); // Data / Time switch <-> Info
@@ -204,7 +216,7 @@ void setup()
   OSD.print("Waiting for PPS.......");
 
 #ifdef MOSD24
-  PCICR |= 0x01 << 1; // Enable Pin Change Interrupt 1 
+  PCICR |= (1 << PCIE1);                      // Enable PCIE1
 #else
   attachInterrupt(digitalPinToInterrupt(PPSpin), checkClock, RISING);
 #endif
@@ -246,7 +258,7 @@ void setup()
 
   
 #ifdef MOSD24
-  PCICR |= 0x01 << 0; // Disable Pin Change Interrupt 1 
+ PCICR &= (0 << PCIE1);                      // Disable PCIE1
 #else
   detachInterrupt(digitalPinToInterrupt(PPSpin));
 #endif
@@ -341,7 +353,7 @@ void setup()
   // Set the interrupt function for the 1PPS pulse
   
 #ifdef MOSD24
-  PCICR |= 0x01 << 1; // Enable Pin Change Interrupt 1 
+  PCICR |= (1 << PCIE1);                      // Enable PCIE1
 #else
   attachInterrupt(digitalPinToInterrupt(PPSpin), PPSevent, RISING);
 #endif

@@ -39,12 +39,13 @@
     Replace this with the CUSTOM.mcm font using the UploadFont-sketch, both found in the MAX7456/examples directory of the 7456 library and 
     a XMODEM program. I used lrzsz, minicom should work too, but not for me.  
 
-    The GPS Tx and Rx are connected to the Micro OSD Rx and Tx (= Atmega serial).  GPS is powered by 5V and GND. 
+    The GPS Tx and Rx are connected to the MicroOSD Rx and Tx (= Atmega serial).  GPS is powered by 5V and GND. 
 
     The CURRENT pin is used as the GPS PPS pin using a pin change interrupt 
     This is Arduino Pin A1, PCINT9 on PCIE1. For these registers see the Atmega 328 manual 12.2.4 en 12.2.6 
 
-    The displaymode pin is VBAT1, Arduino pin A0. There is a strong hardware pulldown on this pin, so it is used inverted with the pushbutton between A0 and VCC
+    The displaymode pin is VBAT1, Arduino pin A0. There is a strong hardware pulldown on this pin, so it is used inverted with the pushbutton 
+    between VBAT1 and VCC
        
     Aart 04-2019 
 
@@ -121,6 +122,7 @@ ISR(TIMER1_COMPA_vect)
   clock1.Update();
 }
 
+#ifdef MOSD24
 ISR(PCINT1_vect) 
 {
   if (digitalRead(A1)) {      // rising edge only
@@ -131,6 +133,7 @@ ISR(PCINT1_vect)
     }
   }
 }
+#endif
 
 
 //******************************************************//

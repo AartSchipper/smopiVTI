@@ -11,6 +11,11 @@ The GPS receiver i use is a GNSS GG-1802 module, also from China.
 
 Aart, 04-2019
 
+Update 06-2020
+
+The MicroOSD osd v2.3.5 board did not function reliable nor easy to get after the first one, so for a next inserter i used the OSD shield like the original project. 
+The GPS receiver is on a few meters of cable. A terminator resistor on the beginning of the line (UTP, 110 ohm) was nessesary to avoid ringing and double interrupts. 
+
 Original README: 
 
 URL: http://smopi.news.nstrefa.pl/index.php?pages/Video-Time-Inserter
